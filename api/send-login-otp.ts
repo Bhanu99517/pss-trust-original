@@ -35,7 +35,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error('OTP insert error:', otpError);
     return res.status(500).json({ error: 'Failed to generate OTP. Please try again.' });
   }
-  await supabase.from('otp_codes').insert({ email, code: otp, expires_at: expiresAt });
 
   try {
     await transporter.sendMail({

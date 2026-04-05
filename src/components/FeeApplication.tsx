@@ -153,9 +153,11 @@ export default function FeeApplication({ onBack }: FeeApplicationProps) {
           contribution: formData.contribution,
           file_url: publicUrl,
           status: 'pending_incharge',
-          trust_branch: formData.trustBranch, // Store branch for easy filtering
-          academic_records: academicRecords
-        }]);
+          trust_branch: formData.trustBranch,
+          academic_records: academicRecords,
+          phone_no: formData.phoneNo,
+          email: formData.email, 
+        }])
 
       if (insertError) throw insertError;
 

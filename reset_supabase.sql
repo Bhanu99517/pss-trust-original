@@ -41,7 +41,10 @@ CREATE TABLE students (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-
+ALTER TABLE students ADD COLUMN IF NOT EXISTS photo_url TEXT;
+ALTER TABLE attendance ADD COLUMN IF NOT EXISTS method TEXT DEFAULT 'face_recognition';
+ALTER TABLE attendance ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE attendance_faces ADD CONSTRAINT IF NOT EXISTS attendance_faces_student_id_unique UNIQUE (student_id);
 
 
 -- Create attendance table
@@ -114,14 +117,21 @@ ALTER TABLE incharges ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow all access to incharges" ON incharges FOR ALL USING (true) WITH CHECK (true);
 
 -- Create OTP codes table
-CREATE TABLE IF NOT EXISTS otp_codes (
-  email TEXT PRIMARY KEY,
-  code TEXT NOT NULL,
-  expires_at TIMESTAMP WITH TIME ZONE NOT NULL
-);
-ALTER TABLE otp_codes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow all otp access" ON otp_codes FOR ALL USING (true) WITH CHECK (true);
+DROP TABLE IF EXISTS otp_codes CASCADE;
 
+CREATE TABLE otp_codes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  email TEXT NOT NULL,
+  code TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_otp_codes_email_code ON otp_codes(email, code);
+ALTER TABLE otp_codes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow public insert" ON otp_codes FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public select" ON otp_codes FOR SELECT USING (true);
+CREATE POLICY "Allow public delete" ON otp_codes FOR DELETE USING (true);
 -- Storage bucket for fee documents
 INSERT INTO storage.buckets (id, name, public) VALUES ('fee-documents', 'fee-documents', true) ON CONFLICT (id) DO NOTHING;
 

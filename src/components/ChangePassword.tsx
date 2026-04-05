@@ -20,47 +20,29 @@ export default function ChangePassword({ onBack, chairmanEmail }: ChangePassword
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Step 1: Verify Old Password and Send OTP
-  const handleSendOtp = async (e: React.FormEvent) => {
+  // Step 1: handleVerifyOldPassword - send real OTP via API
+  const handleVerifyOldPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
-
-    if (newPassword.length < 6) {
-      setError('New password must be at least 6 characters long');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError('New passwords do not match');
-      return;
-    }
-
+    if (newPassword.length < 6) { setError('New password must be at least 6 characters long'); return; }
+    if (newPassword !== confirmPassword) { setError('New passwords do not match'); return; }
     setLoading(true);
-
     try {
-      console.log('Dummy Verify Old Password for:', chairmanEmail);
-      
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Verify old password by attempting sign in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: chairmanEmail,
+        password: oldPassword,
+      });
+      if (signInError) throw new Error('Old password is incorrect.');
 
-      // Simulate successful verification
-      if (oldPassword === 'wrong') {
-        throw new Error('Invalid old password. Please try again.');
-      }
-
-      // 2. Generate 6-digit OTP
-      const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiry = Date.now() + 5 * 60 * 1000; // 5 minutes expiry
-
-      setGeneratedOtp(newOtp);
-      setOtpExpiry(expiry);
-
-      // 3. Send OTP via SMTP (Mocking for now as real SMTP requires backend)
-      console.log(`[MOCK SMTP] Sending OTP ${newOtp} to ${chairmanEmail}`);
-      
-      // Simulate network delay for email sending
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Send OTP via your API
+      const response = await fetch('/api/send-login-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: chairmanEmail }),
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error('Failed to send OTP.');
 
       setStep(2);
       setSuccess('OTP sent to your email. Please check your inbox.');
@@ -71,57 +53,27 @@ export default function ChangePassword({ onBack, chairmanEmail }: ChangePassword
     }
   };
 
-  // Step 2: Verify OTP and Update Password
+  // Step 2: handleUpdatePassword - verify OTP then actually update password
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
-
-    if (!otp) {
-      setError('Please enter the OTP');
-      return;
-    }
-
-    if (!generatedOtp || !otpExpiry) {
-      setError('OTP session expired. Please request a new one.');
-      setStep(1);
-      return;
-    }
-
-    if (Date.now() > otpExpiry) {
-      setError('OTP has expired. Please request a new one.');
-      setStep(1);
-      return;
-    }
-
-    if (otp !== generatedOtp) {
-      setError('Invalid OTP. Please check and try again.');
-      return;
-    }
-
     setLoading(true);
-
     try {
-      console.log('Dummy Update Password to:', newPassword);
+      // Verify OTP
+      const verifyResponse = await fetch('/api/verify-login-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: chairmanEmail, otp }),
+      });
+      const verifyData = await verifyResponse.json();
+      if (!verifyData.success) throw new Error(verifyData.error || 'Invalid OTP.');
 
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Actually update the password in Supabase
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+      if (updateError) throw updateError;
 
       setSuccess('Password updated successfully!');
-      setGeneratedOtp(null);
-      setOtpExpiry(null);
-      
-      // Clear form
-      setOldPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setOtp('');
-
-      // Redirect back after delay
-      setTimeout(() => {
-        onBack();
-      }, 2000);
-
+      setTimeout(onBack, 2000);
     } catch (err: any) {
       setError(err.message);
     } finally {
