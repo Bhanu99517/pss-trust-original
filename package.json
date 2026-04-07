@@ -34,7 +34,7 @@
     "@types/nodemailer": "^6.4.23",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@vercel/node": "^4.0.0",
+    "@vercel/node": "^5.7.0",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
