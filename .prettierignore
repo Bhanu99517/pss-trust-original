@@ -1,0 +1,23 @@
+# Build output
+dist/
+build/
+
+# Dependencies
+node_modules/
+
+# Face API model weights
+public/models/
+
+# Lock files
+package-lock.json
+
+# Environment files
+.env
+.env.local
+
+# SQL files
+*.sql
+
+# Auto-generated
+*.min.js
+*.min.css
