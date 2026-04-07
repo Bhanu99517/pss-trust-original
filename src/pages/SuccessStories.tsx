@@ -64,7 +64,7 @@ const stories = [
     company: "Self employed",
     package: " 6 LPA",
     siblings: "  1 Younger brother",
-    maritalStatus: " Married, Husband working in private company
+    maritalStatus: " Married, Husband working in private company",
     image: "https://wojpyqvcargyffkyxfln.supabase.co/storage/v1/object/public/shared-files/ab6540cd-1441-4b6e-ac1f-0fae25f0185c/e06ee21f-20cb-4d33-b854-4a28db1058c7.jpg"
   },
   {
@@ -79,7 +79,7 @@ const stories = [
     siblings: " 1 Younger sister and 1 Elder sister",
     maritalStatus: " Single",
     image: https://wojpyqvcargyffkyxfln.supabase.co/storage/v1/object/public/shared-files/ab6540cd-1441-4b6e-ac1f-0fae25f0185c/63e678fc-7588-4fa1-8e27-26c5eb0f6482.jpg"
-  },
+  }
   
 ];
 
