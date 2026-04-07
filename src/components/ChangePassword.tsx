@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Lock, ShieldCheck, Mail, Loader2, CheckCircle2, AlertCircle, KeyRound } from 'lucide-react';
-
+import { supabase } from "../supabaseClient";
 interface ChangePasswordProps {
   onBack: () => void;
   chairmanEmail: string;
