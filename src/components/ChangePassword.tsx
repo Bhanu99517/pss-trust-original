@@ -138,7 +138,7 @@ export default function ChangePassword({ onBack, chairmanEmail }: ChangePassword
             )}
 
             {step === 1 ? (
-              <form onSubmit={handleSendOtp} className="space-y-5">
+              <form onSubmit={handleVerifyOldPassword} className="space-y-5">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Old Password</label>
                   <div className="relative">
