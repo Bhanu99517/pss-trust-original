@@ -101,7 +101,70 @@ export default defineConfig(({ mode }) => {
               sizes: '720x1600',
               type: 'image/png',
               form_factor: 'narrow',
-              label: 'PSS Trust Student Portal'
+              label: 'Home Page'
+            },
+            {
+              src: '/screenshot-mobile-2.png',
+              sizes: '720x1600',
+              type: 'image/png',
+              form_factor: 'narrow',
+              label: 'About Us Page'
+            },
+              {
+              src: '/screenshot-mobile-3.png',
+              sizes: '720x1600',
+              type: 'image/png',
+              form_factor: 'narrow',
+              label: 'Our Impact Page'
+            },
+              {
+              src: '/screenshot-mobile-4.png',
+              sizes: '720x1600',
+              type: 'image/png',
+              form_factor: 'narrow',
+              label: 'Gallery Page'
+            },
+              {
+              src: '/screenshot-mobile-5.png',
+              sizes: '720x1600',
+              type: 'image/png',
+              form_factor: 'narrow',
+              label: 'Contact Us Page'
+            },
+              {
+              src: '/screenshot-mobile-6.png',
+              sizes: '720x1600',
+              type: 'image/png',
+              form_factor: 'narrow',
+              label: 'Student Registration'
+            },
+              {
+              src: '/screenshot-mobile-7.png',
+              sizes: '720x1600',
+              type: 'image/png',
+              form_factor: 'narrow',
+              label: 'daily attendance'
+            },
+              {
+              src: '/screenshot-mobile-8.png',
+              sizes: '720x1600',
+              type: 'image/png',
+              form_factor: 'narrow',
+              label: 'Fee Application'
+            },
+              {
+              src: '/screenshot-mobile-9.png',
+              sizes: '720x1600',
+              type: 'image/png',
+              form_factor: 'narrow',
+              label: 'Attendance Report'
+            },
+              {
+              src: '/screenshot-mobile-10.png',
+              sizes: '720x1600',
+              type: 'image/png',
+              form_factor: 'narrow',
+              label: 'Application Status'
             },
             {
               src: '/screenshot-desktop.png',
