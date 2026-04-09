@@ -17,18 +17,6 @@ const stories = [
     image: "https://wojpyqvcargyffkyxfln.supabase.co/storage/v1/object/public/shared-files/ab6540cd-1441-4b6e-ac1f-0fae25f0185c/976fd28d-8f32-435a-acea-0d4333088197.jpg"
   },
   {
-    name: "Sharanamma",
-    education: "B.Tech DRK - ECE",
-    fatherProfession: "Father’ is a Daily wage worker",
-    joinedYear: "2006",
-    studied: "10th, Intermediate, and B.Tech",
-    company: "Self employed",
-    package: " 6 LPA",
-    siblings: "  1 Younger brother",
-    maritalStatus: " Married, Husband working in private company",
-    image: "https://wojpyqvcargyffkyxfln.supabase.co/storage/v1/object/public/shared-files/ab6540cd-1441-4b6e-ac1f-0fae25f0185c/e06ee21f-20cb-4d33-b854-4a28db1058c7.jpg"
-  },
-  {
     name: "P Chamanthi ",
     education: " IIIT Basara-ECE",
     fatherProfession: "Father is a Daily wages worker",
@@ -92,6 +80,31 @@ const stories = [
     siblings: "1 Elder brother",
     maritalStatus: "Married, Husband working as Software Engineer",
     image: "https://wojpyqvcargyffkyxfln.supabase.co/storage/v1/object/public/shared-files/ab6540cd-1441-4b6e-ac1f-0fae25f0185c/e31b1d5a-3acd-475d-a42c-1e55ed1c047b.png"
+  },
+  {
+    name: "MUDHIGUNDA SANGEETHA",
+    education: "9th, 10th, Diploma & B.Tech",
+    fatherProfession: "Daily Wage Worker",
+    joinedYear: "2005",
+    studied: "High School and B.Tech",
+    company: " @ TCS",
+    designation: " UI DEVELOPER",
+    package: "13 LPA",
+    siblings: "1 Elder Brother & Younger Sister",
+    maritalStatus: "Married",
+    image: "https://wojpyqvcargyffkyxfln.supabase.co/storage/v1/object/public/shared-files/ab6540cd-1441-4b6e-ac1f-0fae25f0185c/55a4a666-2981-4bdc-8737-e5a5b966b211.png"
+  },
+  {
+    name: "Sharanamma",
+    education: "B.Tech DRK - ECE",
+    fatherProfession: "Father’ is a Daily wage worker",
+    joinedYear: "2006",
+    studied: "10th, Intermediate, and B.Tech",
+    company: "Self employed",
+    package: " 6 LPA",
+    siblings: "  1 Younger brother",
+    maritalStatus: " Married, Husband working in private company",
+    image: "https://wojpyqvcargyffkyxfln.supabase.co/storage/v1/object/public/shared-files/ab6540cd-1441-4b6e-ac1f-0fae25f0185c/8a6a2556-bf36-46b5-9d23-656807e35200.png"
   },
 ];
 
