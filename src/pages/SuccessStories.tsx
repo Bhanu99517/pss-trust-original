@@ -282,7 +282,7 @@ const stories = [
     siblings: "2 Elder brothers, 1 Younger brother & sister",
     maritalStatus: "Single",
     image: "https://wojpyqvcargyffkyxfln.supabase.co/storage/v1/object/public/shared-files/ab6540cd-1441-4b6e-ac1f-0fae25f0185c/8a6a2556-bf36-46b5-9d23-656807e35200.png"
-  },
+  }
   // 21
   // 22
   // 23
