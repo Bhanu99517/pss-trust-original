@@ -24,11 +24,11 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
     fatherMobile: '',
     motherMobile: '',
     dob: '',
-    gender: 'male',
+    gender: '',
     mobileNumber: '',
     email: '',
     address: '',
-    trustBranch: 'BHEL',
+    trustBranch: '',
     // SSC Details
     sscSchool: '',
     sscBoard: 'SSC',
@@ -44,7 +44,7 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
     diplomaPercentage: '',
     // B.Tech specific
     btechCollege: '',
-    btechYear: '1st',
+    btechYear: '',
     btechBranch: '',
     universityName: '',
   });
@@ -357,7 +357,7 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
                       name="fatherMobile"
                       value={formData.fatherMobile}
                       onChange={handleInputChange}
-                      placeholder="Father's mobile"
+                      placeholder="Father's number"
                       className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white focus:border-slate-300 outline-none transition-all"
                     />
                   </div>
@@ -372,7 +372,7 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
                       name="motherMobile"
                       value={formData.motherMobile}
                       onChange={handleInputChange}
-                      placeholder="Mother's mobile"
+                      placeholder="Mother's number"
                       className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white focus:border-slate-300 outline-none transition-all"
                     />
                   </div>
@@ -420,7 +420,7 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
                       name="mobileNumber"
                       value={formData.mobileNumber}
                       onChange={handleInputChange}
-                      placeholder="10-digit mobile number"
+                      placeholder="student mobile number"
                       className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white focus:border-slate-300 outline-none transition-all"
                     />
                   </div>
@@ -583,7 +583,7 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
                       name="collegeName"
                       value={formData.collegeName}
                       onChange={handleInputChange}
-                      placeholder="Enter college name"
+                      placeholder="Diploma college name"
                       className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white focus:border-slate-300 outline-none transition-all"
                     />
                   </div>
@@ -707,7 +707,7 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">University Name (Optional)</label>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">B.Tech Pin Number</label>
                       <div className="relative">
                         <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                         <input 
@@ -715,7 +715,7 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
                           name="universityName"
                           value={formData.universityName}
                           onChange={handleInputChange}
-                          placeholder="Enter university name"
+                          placeholder="B.Tech Pin Number"
                           className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white focus:border-slate-300 outline-none transition-all"
                         />
                       </div>
