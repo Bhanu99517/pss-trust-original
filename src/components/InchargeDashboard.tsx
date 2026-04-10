@@ -68,7 +68,7 @@ interface InchargeDashboardProps {
 
 export default function InchargeDashboard({ onLogout, onChangePassword }: InchargeDashboardProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filter, setFilter] = useState('All');
+  const [appFilter, setAppFilter] = useState('pending_branch');
   const [activeTab, setActiveTab] = useState<'students' | 'applications' | 'attendance'>('students');
   const [applications, setApplications] = useState<FeeApplication[]>([]);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
@@ -218,7 +218,8 @@ export default function InchargeDashboard({ onLogout, onChangePassword }: Inchar
     const matchesSearch = app.full_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           app.student_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (app.email && app.email.toLowerCase().includes(searchTerm.toLowerCase()));
-    return matchesSearch;
+    const matchesStatus = appFilter === 'All' || app.status === appFilter;
+    return matchesSearch && matchesStatus;
   });
 
   return (
@@ -328,6 +329,23 @@ export default function InchargeDashboard({ onLogout, onChangePassword }: Inchar
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          {activeTab === 'applications' && (
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <Filter className="w-5 h-5 text-slate-400" />
+              <select 
+                value={appFilter}
+                onChange={(e) => setAppFilter(e.target.value)}
+                className="px-4 py-3 rounded-xl border border-slate-100 focus:border-slate-300 outline-none transition-all bg-white text-sm font-medium"
+              >
+                <option value="All">All Status</option>
+                <option value="pending_branch">Pending Branch</option>
+                <option value="pending_super">Pending Super</option>
+                <option value="pending_chairman">Pending Chairman</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+          )}
         </div>
 
         {/* List Content */}

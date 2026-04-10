@@ -91,6 +91,7 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('All');
   const [branchFilter, setBranchFilter] = useState('All');
+  const [appFilter, setAppFilter] = useState('pending_chairman');
   const [activeTab, setActiveTab] = useState<'students' | 'applications' | 'attendance' | 'incharges'>('students');
   const [applications, setApplications] = useState<FeeApplication[]>([]);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
@@ -366,9 +367,8 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
                           app.student_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (app.email && app.email.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesBranch = branchFilter === 'All' || app.trust_branch === branchFilter;
-    // Chairman only sees apps that have passed super incharge
-    const isVisibleToChairman = app.status !== 'pending_branch' && app.status !== 'pending_super';
-    return matchesSearch && matchesBranch && isVisibleToChairman;
+    const matchesStatus = appFilter === 'All' || app.status === appFilter;
+    return matchesSearch && matchesBranch && matchesStatus;
   });
 
   const filteredAttendance = attendanceLogs.filter(log => {
@@ -520,22 +520,31 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
               </select>
             )}
 
-            {(activeTab === 'students' || activeTab === 'attendance' || activeTab === 'incharges') && (
+            {(activeTab === 'students' || activeTab === 'attendance' || activeTab === 'incharges' || activeTab === 'applications') && (
               <select 
                 className="px-4 py-2 rounded-xl border border-slate-100 focus:border-slate-300 outline-none transition-all text-sm font-medium bg-slate-50"
                 value={branchFilter}
                 onChange={(e) => setBranchFilter(e.target.value)}
               >
                 <option value="All">All Branches</option>
-                {activeTab === 'incharges' ? (
-                  ['BHEL', 'Bollaram', 'MYP', 'MKR', 'ECIL'].map(b => (
-                    <option key={b} value={b}>{b}</option>
-                  ))
-                ) : (
-                  ['BHEL', 'Bollaram', 'MYP', 'MKR', 'ECIL'].map(b => (
-                    <option key={b} value={b}>{b}</option>
-                  ))
-                )}
+                {['BHEL', 'Bollaram', 'MYP', 'MKR', 'ECIL'].map(b => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+            )}
+
+            {activeTab === 'applications' && (
+              <select 
+                className="px-4 py-2 rounded-xl border border-slate-100 focus:border-slate-300 outline-none transition-all text-sm font-medium bg-slate-50"
+                value={appFilter}
+                onChange={(e) => setAppFilter(e.target.value)}
+              >
+                <option value="All">All Status</option>
+                <option value="pending_branch">Pending Branch</option>
+                <option value="pending_super">Pending Super</option>
+                <option value="pending_chairman">Pending Chairman</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
               </select>
             )}
           </div>

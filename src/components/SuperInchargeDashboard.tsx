@@ -66,6 +66,7 @@ interface SuperInchargeDashboardProps {
 export default function SuperInchargeDashboard({ onLogout, onChangePassword }: SuperInchargeDashboardProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [branchFilter, setBranchFilter] = useState('All');
+  const [appFilter, setAppFilter] = useState('pending_super');
   const [activeTab, setActiveTab] = useState<'students' | 'applications'>('applications');
   const [applications, setApplications] = useState<FeeApplication[]>([]);
   const [studentsList, setStudentsList] = useState<Student[]>([]);
@@ -208,9 +209,8 @@ export default function SuperInchargeDashboard({ onLogout, onChangePassword }: S
     const matchesBranch = branchFilter === 'All'
       ? (assignedBranches.length > 0 ? assignedBranches.includes(app.trust_branch || '') : true)
       : app.trust_branch === branchFilter;
-    // Super incharge only sees apps that have passed branch incharge
-    const isVisible = app.status !== 'pending_branch';
-    return matchesSearch && matchesBranch && isVisible;
+    const matchesStatus = appFilter === 'All' || app.status === appFilter;
+    return matchesSearch && matchesBranch && matchesStatus;
   });
 
   if (isLoading) {
@@ -332,6 +332,23 @@ export default function SuperInchargeDashboard({ onLogout, onChangePassword }: S
               <option key={b} value={b}>{b}</option>
             ))}
           </select>
+          {activeTab === 'applications' && (
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <Filter className="w-5 h-5 text-slate-400" />
+              <select 
+                value={appFilter}
+                onChange={(e) => setAppFilter(e.target.value)}
+                className="px-4 py-3 rounded-xl border border-slate-100 focus:border-slate-300 outline-none transition-all bg-white text-sm font-medium"
+              >
+                <option value="All">All Status</option>
+                <option value="pending_branch">Pending Branch</option>
+                <option value="pending_super">Pending Super</option>
+                <option value="pending_chairman">Pending Chairman</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+          )}
         </div>
 
         {/* List Content */}
