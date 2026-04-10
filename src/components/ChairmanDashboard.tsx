@@ -61,6 +61,15 @@ interface Student {
   created_at?: string;
 }
 
+interface Notice {
+  id: string;
+  title: string;
+  content: string;
+  branches: string[];
+  created_at: string;
+  created_by: string;
+}
+
 interface FeeApplication {
   id: string;
   student_id: string;
@@ -92,17 +101,20 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
   const [filter, setFilter] = useState('All');
   const [branchFilter, setBranchFilter] = useState('All');
   const [appFilter, setAppFilter] = useState('pending_chairman');
-  const [activeTab, setActiveTab] = useState<'students' | 'applications' | 'attendance' | 'incharges'>('students');
+  const [activeTab, setActiveTab] = useState<'students' | 'applications' | 'attendance' | 'incharges' | 'notices'>('students');
   const [applications, setApplications] = useState<FeeApplication[]>([]);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
   const [studentsList, setStudentsList] = useState<Student[]>([]);
   const [incharges, setIncharges] = useState<any[]>([]);
+  const [notices, setNotices] = useState<Notice[]>([]);
   const [selectedApp, setSelectedApp] = useState<FeeApplication | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showAddIncharge, setShowAddIncharge] = useState(false);
+  const [showAddNotice, setShowAddNotice] = useState(false);
   const [newIncharge, setNewIncharge] = useState({ email: '', fullName: '', branches: [] as string[], role: 'branch_incharge', password: '' });
+  const [newNotice, setNewNotice] = useState({ title: '', content: '', branches: [] as string[] });
   const BRANCHES = ['BHEL', 'Bollaram', 'MYP', 'MKR', 'ECIL'];
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [isFixing, setIsFixing] = useState(false);
@@ -114,7 +126,22 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
     fetchApplications();
     fetchAttendanceLogs();
     fetchIncharges();
+    fetchNotices();
   }, []);
+
+  const fetchNotices = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('notices')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setNotices(data || []);
+    } catch (error) {
+      console.error('Failed to fetch notices:', error);
+    }
+  };
 
   const fetchIncharges = async () => {
     try {
@@ -156,6 +183,53 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
       alert('Error: ' + error.message);
     } finally {
       setIsUpdating(null);
+    }
+  };
+
+  const handleAddNotice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newNotice.branches.length === 0) {
+      alert('Please select at least one branch.');
+      return;
+    }
+    setIsUpdating('adding-notice');
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from('notices')
+        .insert([{
+          title: newNotice.title,
+          content: newNotice.content,
+          branches: newNotice.branches,
+          created_by: user?.email
+        }]);
+
+      if (error) throw error;
+
+      alert('Notice added successfully!');
+      setShowAddNotice(false);
+      setNewNotice({ title: '', content: '', branches: [] });
+      fetchNotices();
+    } catch (error: any) {
+      console.error('Add notice error:', error);
+      alert('Error adding notice: ' + error.message);
+    } finally {
+      setIsUpdating(null);
+    }
+  };
+
+  const handleDeleteNotice = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this notice?')) return;
+    try {
+      const { error } = await supabase
+        .from('notices')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      setNotices(prev => prev.filter(n => n.id !== id));
+    } catch (error: any) {
+      alert('Error deleting notice: ' + error.message);
     }
   };
 
@@ -491,6 +565,12 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
           >
             Manage Incharges ({incharges.length})
           </button>
+          <button 
+            onClick={() => { setActiveTab('notices'); setBranchFilter('All'); setFilter('All'); }}
+            className={`px-8 py-4 text-sm font-bold transition-all ${activeTab === 'notices' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            Notices ({notices.length})
+          </button>
         </div>
 
         {/* Table Controls */}
@@ -556,6 +636,16 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
             >
               <Users className="w-4 h-4" />
               <span>Add New Incharge</span>
+            </button>
+          )}
+
+          {activeTab === 'notices' && (
+            <button 
+              onClick={() => setShowAddNotice(true)}
+              className="px-6 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all shadow-lg flex items-center gap-2 whitespace-nowrap"
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>Add New Notice</span>
             </button>
           )}
         </div>
@@ -855,6 +945,57 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
               </table>
             </div>
           )}
+
+          {activeTab === 'notices' && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-100">
+                    <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Title</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Branches</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {notices.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-6 py-12 text-center text-slate-400 italic">
+                        No notices sent yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    notices.map((notice) => (
+                      <tr key={notice.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-6 py-6 font-bold text-slate-900">{notice.title}</td>
+                        <td className="px-6 py-6">
+                          <div className="flex flex-wrap gap-1">
+                            {notice.branches.map((b) => (
+                              <span key={b} className="px-2 py-0.5 bg-slate-100 rounded-full text-[10px] font-bold text-slate-600 whitespace-nowrap">
+                                {b}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-6 py-6 text-sm text-slate-500">
+                          {new Date(notice.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-6 text-right">
+                          <button 
+                            onClick={() => handleDeleteNotice(notice.id)}
+                            className="p-2 text-slate-400 hover:text-red-600 transition-colors"
+                            title="Delete Notice"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </main>
 
@@ -997,6 +1138,83 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
                   className="w-full py-4 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-60"
                 >
                   {isUpdating === 'adding-incharge' ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create Account'}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+
+        {showAddNotice && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAddNotice(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-8"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-slate-900">Add New Notice</h3>
+                <button onClick={() => setShowAddNotice(false)} className="text-slate-400 hover:text-slate-600">
+                  <CloseIcon className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleAddNotice} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-400 uppercase">Title</label>
+                  <input 
+                    type="text" 
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-slate-900 outline-none transition-all"
+                    value={newNotice.title}
+                    onChange={(e) => setNewNotice({...newNotice, title: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-400 uppercase">Content</label>
+                  <textarea 
+                    required
+                    rows={4}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-slate-900 outline-none transition-all resize-none"
+                    value={newNotice.content}
+                    onChange={(e) => setNewNotice({...newNotice, content: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-400 uppercase block mb-2">Select Branches</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {BRANCHES.map(b => (
+                      <label key={b} className="flex items-center gap-2 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-all">
+                        <input 
+                          type="checkbox"
+                          checked={newNotice.branches.includes(b)}
+                          onChange={(e) => {
+                            const branches = e.target.checked 
+                              ? [...newNotice.branches, b]
+                              : newNotice.branches.filter(item => item !== b);
+                            setNewNotice({...newNotice, branches});
+                          }}
+                          className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                        />
+                        <span className="text-sm font-medium text-slate-700">{b}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                
+                <button 
+                  type="submit"
+                  disabled={isUpdating === 'adding-notice'}
+                  className="w-full py-4 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  {isUpdating === 'adding-notice' ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Send Notice'}
                 </button>
               </form>
             </motion.div>

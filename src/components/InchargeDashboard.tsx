@@ -21,7 +21,8 @@ import {
   Lock,
   Pencil,
   Trash2,
-  Settings
+  Settings,
+  MessageSquare
 } from 'lucide-react';
 
 const PSS_LOGO = "https://wojpyqvcargyffkyxfln.supabase.co/storage/v1/object/public/shared-files/42cb9343-6c24-4522-8ac5-0c27336aff3c/a84f56a0-4104-45b1-8c19-e9d129a3f77f.jpg";
@@ -61,6 +62,15 @@ interface FeeApplication {
   created_at: string;
 }
 
+interface Notice {
+  id: string;
+  title: string;
+  content: string;
+  branches: string[];
+  created_at: string;
+  created_by: string;
+}
+
 interface InchargeDashboardProps {
   onLogout: () => void;
   onChangePassword: () => void;
@@ -68,11 +78,13 @@ interface InchargeDashboardProps {
 
 export default function InchargeDashboard({ onLogout, onChangePassword }: InchargeDashboardProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [filter, setFilter] = useState('All');
   const [appFilter, setAppFilter] = useState('pending_branch');
-  const [activeTab, setActiveTab] = useState<'students' | 'applications' | 'attendance'>('students');
+  const [activeTab, setActiveTab] = useState<'students' | 'applications' | 'attendance' | 'notices'>('students');
   const [applications, setApplications] = useState<FeeApplication[]>([]);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
   const [studentsList, setStudentsList] = useState<Student[]>([]);
+  const [notices, setNotices] = useState<Notice[]>([]);
   const [selectedApp, setSelectedApp] = useState<FeeApplication | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -102,6 +114,7 @@ export default function InchargeDashboard({ onLogout, onChangePassword }: Inchar
             fetchStudents(branches);
             fetchApplications(branches);
             fetchAttendanceLogs(branches);
+            fetchNotices(branches);
           }
         }
       } catch (error) {
@@ -113,6 +126,21 @@ export default function InchargeDashboard({ onLogout, onChangePassword }: Inchar
 
     initializeDashboard();
   }, []);
+
+  const fetchNotices = async (branches: string[]) => {
+    try {
+      const { data, error } = await supabase
+        .from('notices')
+        .select('*')
+        .overlaps('branches', branches)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setNotices(data || []);
+    } catch (error) {
+      console.error('Failed to fetch notices:', error);
+    }
+  };
 
   const handleLogoutClick = () => {
     setShowLogoutConfirm(true);
@@ -210,7 +238,7 @@ export default function InchargeDashboard({ onLogout, onChangePassword }: Inchar
       s.college_name.toLowerCase().includes(searchLower) ||
       s.branch.toLowerCase().includes(searchLower);
     
-    const matchesFilter = Filter === 'All' || (Filter === 'Logged In' && s.status === 'Active') || (Filter === 'Not Logged In' && s.status === 'Pending');
+    const matchesFilter = filter === 'All' || (filter === 'Logged In' && s.status === 'Active') || (filter === 'Not Logged In' && s.status === 'Pending');
     return matchesSearch && matchesFilter;
   });
 
@@ -314,6 +342,12 @@ export default function InchargeDashboard({ onLogout, onChangePassword }: Inchar
             className={`px-8 py-4 text-sm font-bold transition-all ${activeTab === 'attendance' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
           >
             Today's Attendance ({attendanceLogs.length})
+          </button>
+          <button 
+            onClick={() => setActiveTab('notices')}
+            className={`px-8 py-4 text-sm font-bold transition-all ${activeTab === 'notices' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            Notices ({notices.length})
           </button>
         </div>
 
@@ -523,7 +557,7 @@ export default function InchargeDashboard({ onLogout, onChangePassword }: Inchar
                 </tbody>
               </table>
             </div>
-          ) : (
+          ) : activeTab === 'attendance' ? (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -569,6 +603,43 @@ export default function InchargeDashboard({ onLogout, onChangePassword }: Inchar
                   )}
                 </tbody>
               </table>
+            </div>
+          ) : (
+            <div className="p-8">
+              <div className="grid grid-cols-1 gap-6">
+                {notices.length === 0 ? (
+                  <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                    <MessageSquare className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                    <p className="text-slate-500 font-medium">No notices for your branch yet.</p>
+                  </div>
+                ) : (
+                  notices.map((notice) => (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      key={notice.id} 
+                      className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all"
+                    >
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-slate-900 mb-1">{notice.title}</h3>
+                          <p className="text-xs text-slate-400 font-medium">
+                            {new Date(notice.created_at).toLocaleDateString()} • From Chairman
+                          </p>
+                        </div>
+                        <div className="flex gap-1">
+                          {notice.branches.map(b => (
+                            <span key={b} className="px-2 py-0.5 bg-slate-50 text-slate-500 rounded-full text-[10px] font-bold uppercase">
+                              {b}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-slate-600 leading-relaxed whitespace-pre-wrap">{notice.content}</p>
+                    </motion.div>
+                  ))
+                )}
+              </div>
             </div>
           )}
         </div>
