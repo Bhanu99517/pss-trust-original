@@ -210,7 +210,7 @@ export default function InchargeDashboard({ onLogout, onChangePassword }: Inchar
       s.college_name.toLowerCase().includes(searchLower) ||
       s.branch.toLowerCase().includes(searchLower);
     
-    const matchesFilter = filter === 'All' || (filter === 'Logged In' && s.status === 'Active') || (filter === 'Not Logged In' && s.status === 'Pending');
+    const matchesFilter = Filter === 'All' || (Filter === 'Logged In' && s.status === 'Active') || (Filter === 'Not Logged In' && s.status === 'Pending');
     return matchesSearch && matchesFilter;
   });
 
