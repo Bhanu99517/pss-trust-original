@@ -102,6 +102,7 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showAddIncharge, setShowAddIncharge] = useState(false);
   const [newIncharge, setNewIncharge] = useState({ email: '', fullName: '', branches: [] as string[], role: 'branch_incharge', password: '' });
+  const BRANCHES = ['BHEL', 'Bollaram', 'MYP', 'MKR', 'ECIL'];
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [isFixing, setIsFixing] = useState(false);
   const [approvalComment, setApprovalComment] = useState('');
@@ -900,10 +901,18 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
                       required
                       className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-slate-900 outline-none transition-all"
                       value={newIncharge.role}
-                      onChange={(e) => setNewIncharge({...newIncharge, role: e.target.value, branches: []})}
+                      onChange={(e) => {
+                        const role = e.target.value;
+                        let branches: string[] = [];
+                        if (role === 'chairman') {
+                          branches = [...BRANCHES];
+                        }
+                        setNewIncharge({...newIncharge, role, branches});
+                      }}
                     >
                       <option value="branch_incharge">Branch Incharge</option>
                       <option value="super_incharge">Super Incharge</option>
+                      <option value="chairman">Chairman</option>
                     </select>
                   </div>
 
@@ -917,16 +926,16 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
                         onChange={(e) => setNewIncharge({...newIncharge, branches: [e.target.value]})}
                       >
                         <option value="">Select Branch</option>
-                        {['BHEL', 'Bollaram', 'MYP', 'MKR', 'ECIL'].map(b => (
+                        {BRANCHES.map(b => (
                           <option key={b} value={b}>{b}</option>
                         ))}
                       </select>
                     </div>
-                  ) : (
+                  ) : newIncharge.role === 'super_incharge' ? (
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-slate-400 uppercase block mb-2">Select Accessible Branches</label>
                       <div className="grid grid-cols-2 gap-3">
-                        {['BHEL', 'Bollaram', 'MYP', 'MKR', 'ECIL'].map(b => (
+                        {BRANCHES.map(b => (
                           <label key={b} className="flex items-center gap-2 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-all">
                             <input 
                               type="checkbox"
@@ -946,6 +955,18 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
                       {newIncharge.branches.length === 0 && (
                         <p className="text-[10px] text-red-500 font-bold">Please select at least one branch</p>
                       )}
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                      <p className="text-xs font-bold text-slate-400 uppercase mb-2">Accessible Branches</p>
+                      <p className="text-sm font-bold text-slate-900">All Branches (Full Access)</p>
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {BRANCHES.map(b => (
+                          <span key={b} className="px-2 py-0.5 bg-white border border-slate-200 rounded-full text-[10px] font-bold text-slate-600">
+                            {b}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
