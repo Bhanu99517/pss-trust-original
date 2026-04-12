@@ -101,7 +101,9 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
   const [filter, setFilter] = useState('All');
   const [branchFilter, setBranchFilter] = useState('All');
   const [appFilter, setAppFilter] = useState('pending_chairman');
-  const [activeTab, setActiveTab] = useState<'students' | 'applications' | 'attendance' | 'incharges' | 'notices'>('students');
+  const [activeTab, setActiveTab] = useState<'students' | 'applications' | 'attendance' | 'incharges' | 'notices' | 'signup-code'>('students');
+  const [signupCode, setSignupCode] = useState<{ code: string | null, expiresAt: string | null }>({ code: null, expiresAt: null });
+  const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   const [applications, setApplications] = useState<FeeApplication[]>([]);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
   const [studentsList, setStudentsList] = useState<Student[]>([]);
@@ -127,7 +129,38 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
     fetchAttendanceLogs();
     fetchIncharges();
     fetchNotices();
+    fetchSignupCode();
   }, []);
+
+  const fetchSignupCode = async () => {
+    try {
+      const response = await fetch('/api/get-signup-code');
+      const data = await response.json();
+      if (data.success) {
+        setSignupCode({ code: data.code, expiresAt: data.expiresAt });
+      }
+    } catch (error) {
+      console.error('Failed to fetch signup code:', error);
+    }
+  };
+
+  const handleGenerateCode = async () => {
+    setIsGeneratingCode(true);
+    try {
+      const response = await fetch('/api/generate-signup-code', { method: 'POST' });
+      const data = await response.json();
+      if (data.success) {
+        setSignupCode({ code: data.code, expiresAt: data.expiresAt });
+        alert('New signup code generated successfully!');
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error: any) {
+      alert('Error generating code: ' + error.message);
+    } finally {
+      setIsGeneratingCode(null);
+    }
+  };
 
   const fetchNotices = async () => {
     try {
@@ -571,6 +604,12 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
           >
             Notices ({notices.length})
           </button>
+          <button 
+            onClick={() => { setActiveTab('signup-code'); }}
+            className={`px-8 py-4 text-sm font-bold transition-all ${activeTab === 'signup-code' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            Signup Code
+          </button>
         </div>
 
         {/* Table Controls */}
@@ -885,7 +924,7 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
                 </tbody>
               </table>
             </div>
-          ) : (
+          ) : activeTab === 'incharges' ? (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -944,9 +983,7 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
                 </tbody>
               </table>
             </div>
-          )}
-
-          {activeTab === 'notices' && (
+          ) : activeTab === 'notices' ? (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -995,7 +1032,53 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
                 </tbody>
               </table>
             </div>
-          )}
+          ) : activeTab === 'signup-code' ? (
+            <div className="p-12 flex flex-col items-center justify-center text-center space-y-8">
+              <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600">
+                <Lock className="w-10 h-10" />
+              </div>
+              
+              <div className="max-w-md space-y-4">
+                <h2 className="text-2xl font-bold text-slate-900">Student Registration Code</h2>
+                <p className="text-slate-500">
+                  Generate a 6-digit code that students must use to register. 
+                  Each code is valid for <span className="font-bold text-slate-900">1 hour</span> from the time of generation.
+                </p>
+              </div>
+
+              {signupCode.code ? (
+                <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 w-full max-w-sm space-y-4">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Active Code</p>
+                  <div className="text-5xl font-black text-slate-900 tracking-[0.2em] font-mono">
+                    {signupCode.code}
+                  </div>
+                  <div className="flex items-center justify-center gap-2 text-orange-600 bg-orange-50 py-2 px-4 rounded-full text-xs font-bold">
+                    <Clock className="w-4 h-4" />
+                    <span>Expires at: {new Date(signupCode.expiresAt!).toLocaleTimeString()}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 w-full max-w-sm">
+                  <p className="text-slate-400 italic">No active code. Generate one to allow student signups.</p>
+                </div>
+              )}
+
+              <button 
+                onClick={handleGenerateCode}
+                disabled={isGeneratingCode}
+                className="px-10 py-4 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 flex items-center gap-3 disabled:opacity-60"
+              >
+                {isGeneratingCode ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    <Settings className="w-5 h-5" />
+                    <span>{signupCode.code ? 'Generate New Code' : 'Generate Signup Code'}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          ) : null}
         </div>
       </main>
 

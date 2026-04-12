@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, User, GraduationCap, Building2, Calendar, Hash, Percent, School, Phone, Mail, MapPin, BookOpen, X, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, User, GraduationCap, Building2, Calendar, Hash, Percent, School, Phone, Mail, MapPin, BookOpen, X, CheckCircle2, AlertCircle, Loader2, Lock } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 interface SignupProps {
@@ -11,24 +11,21 @@ interface SignupProps {
 const TRUST_BRANCHES = ['BHEL', 'Bollaram', 'MYP', 'MKR', 'ECIL'];
 
 export default function Signup({ onBack, onSuccess }: SignupProps) {
-  const [step, setStep] = useState<'form' | 'otp'>('form');
+  const [step, setStep] = useState<'form' | 'verification'>('form');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [otp, setOtp] = useState('');
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [otpError, setOtpError] = useState<string | null>(null);
+  const [regCode, setRegCode] = useState('');
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     fullName: '',
     fatherName: '',
     motherName: '',
-    fatherMobile: '',
-    motherMobile: '',
     dob: '',
-    gender: '',
+    gender: 'male',
     mobileNumber: '',
     email: '',
     address: '',
-    trustBranch: '',
+    trustBranch: 'BHEL',
     // SSC Details
     sscSchool: '',
     sscBoard: 'SSC',
@@ -61,50 +58,40 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
       alert('Please enter a valid 10-digit Indian mobile number.');
       return;
     }
-    setIsSendingOtp(true);
-    setOtpError(null);
-
+    
+    // Check if student already exists
     try {
-      const response = await fetch('/api/send-signup-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email }),
-      });
-
-      let data;
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
-      } else {
-        const text = await response.text();
-        throw new Error(text || `Server error: ${response.status}`);
+      const { data, error } = await supabase
+        .from('students')
+        .select('id')
+        .eq('email', formData.email)
+        .maybeSingle();
+      
+      if (data) {
+        alert('A student with this email already exists.');
+        return;
       }
-
-      if (!response.ok) throw new Error(data.error || 'Failed to send verification email');
-
-      setStep('otp');
-    } catch (error: any) {
-      console.error('OTP send error:', error);
-      alert(error.message);
-    } finally {
-      setIsSendingOtp(false);
+    } catch (err) {
+      console.error('Check student error:', err);
     }
+
+    setStep('verification');
   };
 
-  const handleVerifyOtp = async () => {
-    if (otp.length !== 6) {
-      setOtpError('Please enter a 6-digit code');
+  const handleVerifyCode = async () => {
+    if (regCode.length !== 6) {
+      setCodeError('Please enter a 6-digit code');
       return;
     }
 
-    setIsVerifyingOtp(true);
-    setOtpError(null);
+    setIsVerifyingCode(true);
+    setCodeError(null);
 
     try {
       const response = await fetch('/api/verify-signup-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email, code: otp }),
+        body: JSON.stringify({ email: formData.email, code: regCode }),
       });
 
       let data;
@@ -116,14 +103,14 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
         throw new Error(text || `Server error: ${response.status}`);
       }
 
-      if (!response.ok) throw new Error(data.error || 'Invalid verification code');
+      if (!response.ok) throw new Error(data.error || 'Invalid registration code');
 
-      // OTP Verified, now proceed with signup
+      // Code Verified, now proceed with signup
       await completeRegistration();
     } catch (error: any) {
-      setOtpError(error.message);
+      setCodeError(error.message);
     } finally {
-      setIsVerifyingOtp(false);
+      setIsVerifyingCode(false);
     }
   };
 
@@ -161,8 +148,6 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
           full_name: formData.fullName,
           father_name: formData.fatherName,
           mother_name: formData.motherName,
-          father_mobile: formData.fatherMobile,
-          mother_mobile: formData.motherMobile,
           dob: formData.dob,
           gender: formData.gender,
           mobile_number: formData.mobileNumber,
@@ -200,7 +185,7 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
     }
   };
 
-  if (step === 'otp') {
+  if (step === 'verification') {
     return (
       <div className="min-h-screen bg-[#F8FAFC] py-12 px-6 lg:px-8 flex items-center justify-center">
         <motion.div 
@@ -215,40 +200,40 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
             >
               <ArrowLeft className="w-6 h-6" />
             </button>
-            <div className="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center mb-6 mt-4">
-              <Mail className="w-8 h-8 text-blue-400" />
+            <div className="w-16 h-16 bg-emerald-500/20 rounded-2xl flex items-center justify-center mb-6 mt-4">
+              <Lock className="w-8 h-8 text-emerald-400" />
             </div>
-            <h2 className="text-2xl font-bold mb-2">Verify Your Email</h2>
-            <p className="text-slate-400">We've sent a 6-digit code to <span className="text-white font-medium">{formData.email}</span></p>
+            <h2 className="text-2xl font-bold mb-2">Registration Code</h2>
+            <p className="text-slate-400">Please enter the 6-digit code provided by the Chairman to complete your registration.</p>
           </div>
 
           <div className="p-8 space-y-6">
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Verification Code</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">6-Digit Code</label>
               <input 
                 type="text"
                 maxLength={6}
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                placeholder="Enter 6-digit code"
-                className="w-full text-center text-3xl font-bold tracking-[0.5em] py-4 rounded-2xl border-2 border-slate-100 bg-slate-50 focus:bg-white focus:border-blue-500 outline-none transition-all"
+                value={regCode}
+                onChange={(e) => setRegCode(e.target.value.replace(/\D/g, ''))}
+                placeholder="000000"
+                className="w-full text-center text-3xl font-bold tracking-[0.5em] py-4 rounded-2xl border-2 border-slate-100 bg-slate-50 focus:bg-white focus:border-emerald-500 outline-none transition-all"
               />
             </div>
 
-            {otpError && (
+            {codeError && (
               <div className="flex items-center gap-2 text-red-600 bg-red-50 p-4 rounded-xl text-sm">
                 <AlertCircle className="w-5 h-5 shrink-0" />
-                <p>{otpError}</p>
+                <p>{codeError}</p>
               </div>
             )}
 
             <div className="space-y-3">
               <button 
-                onClick={handleVerifyOtp}
-                disabled={isVerifyingOtp || isSubmitting}
+                onClick={handleVerifyCode}
+                disabled={isVerifyingCode || isSubmitting}
                 className="w-full py-4 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                {isVerifyingOtp || isSubmitting ? (
+                {isVerifyingCode || isSubmitting ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
                   <>
@@ -256,13 +241,6 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
                     <span>Verify & Register</span>
                   </>
                 )}
-              </button>
-              <button 
-                onClick={handleSubmit}
-                disabled={isSendingOtp}
-                className="w-full py-4 text-slate-500 font-bold hover:text-slate-900 transition-colors text-sm"
-              >
-                Resend Code
               </button>
             </div>
           </div>
@@ -343,36 +321,6 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
                       value={formData.motherName}
                       onChange={handleInputChange}
                       placeholder="Mother's name"
-                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white focus:border-slate-300 outline-none transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Father's Mobile Number</label>
-                  <div className="relative">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                    <input 
-                      type="tel" 
-                      name="fatherMobile"
-                      value={formData.fatherMobile}
-                      onChange={handleInputChange}
-                      placeholder="Father's number"
-                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white focus:border-slate-300 outline-none transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Mother's Mobile Number</label>
-                  <div className="relative">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                    <input 
-                      type="tel" 
-                      name="motherMobile"
-                      value={formData.motherMobile}
-                      onChange={handleInputChange}
-                      placeholder="Mother's number"
                       className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white focus:border-slate-300 outline-none transition-all"
                     />
                   </div>
@@ -727,14 +675,9 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
 
             <button 
               type="submit"
-              disabled={isSendingOtp}
-              className="w-full py-4 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-4 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
             >
-              {isSendingOtp ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <span>Register & Continue to Face Setup</span>
-              )}
+              <span>Register & Continue to Verification</span>
             </button>
           </form>
         </motion.div>

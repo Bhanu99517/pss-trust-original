@@ -10,13 +10,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { email, code } = req.body;
-  if (!email || !code) return res.status(400).json({ error: 'Email and code are required' });
+  if (!code) return res.status(400).json({ error: 'Verification code is required' });
 
   try {
+    // Check for the chairman's global signup code
     const { data: otpData, error: fetchError } = await supabase
       .from('otp_codes')
       .select('*')
-      .eq('email', email)
+      .eq('email', 'CHAIRMAN_SIGNUP_CODE')
       .eq('code', code)
       .single();
 
@@ -28,9 +29,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (expiresAt < new Date()) {
       return res.status(400).json({ error: 'Verification code has expired.' });
     }
-
-    // Delete the OTP after successful verification
-    await supabase.from('otp_codes').delete().eq('id', otpData.id);
 
     return res.json({ success: true });
   } catch (err) {
