@@ -118,14 +118,13 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
     setIsSubmitting(true);
     try {
       // 1. Sign up user with Supabase Auth
-      const defaultPassword = `PSS@${formData.mobileNumber}`; // Use mobile number as part of default pwd
+      const defaultPassword = `PSS@${formData.mobileNumber}`;
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: defaultPassword,
       });
 
       if (authError) {
-        // Supabase Auth rate limit gives "over_email_send_rate_limit" or similar
         const msg = authError.message || '';
         if (msg.toLowerCase().includes('rate') || msg.toLowerCase().includes('limit') || authError.status === 429) {
           throw new Error('Too many signup attempts. Supabase has a limit of a few signups per hour. Please wait and try again later, or contact the administrator.');
@@ -181,6 +180,24 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
       if (dbError) {
         console.error('Database insertion error:', dbError);
         throw new Error('Auth successful but failed to save profile details.');
+      }
+
+      // 4. Send Student ID to registered email
+      try {
+        await fetch('/api/send-student-id', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formData.email,
+            fullName: formData.fullName,
+            trustId: generatedTrustId,
+            trustBranch: formData.trustBranch,
+            courseType: formData.courseType,
+          }),
+        });
+      } catch (emailErr) {
+        // Non-blocking: registration already succeeded, just log the email failure
+        console.error('Failed to send student ID email:', emailErr);
       }
 
       onSuccess(authData.user.id);
