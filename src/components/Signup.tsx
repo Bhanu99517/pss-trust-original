@@ -119,92 +119,17 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
   const completeRegistration = async () => {
     setIsSubmitting(true);
     try {
-      // 1. Sign up user with Supabase Auth
-      const defaultPassword = `PSS@${formData.mobileNumber}`;
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: defaultPassword,
+      // Call server-side API which uses Service Role Key (no rate limits)
+      const response = await fetch('/api/register-student', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formData }),
       });
 
-      if (authError) {
-        const msg = authError.message || '';
-        if (msg.toLowerCase().includes('rate') || msg.toLowerCase().includes('limit') || authError.status === 429) {
-          throw new Error('Too many signup attempts. Supabase has a limit of a few signups per hour. Please wait and try again later, or contact the administrator.');
-        }
-        throw authError;
-      }
-      if (!authData.user) throw new Error('Signup failed - no user data returned');
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Registration failed');
 
-      // 2. Generate Trust ID (Year-Branch-Serial)
-      const year = parseInt(formData.yearOfJoining.toString()) || new Date().getFullYear();
-      const branch = formData.trustBranch;
-
-      const { count } = await supabase
-        .from('students')
-        .select('*', { count: 'exact', head: true })
-        .eq('trust_branch', branch)
-        .eq('year_of_joining', year);
-
-      const serial = ((count || 0) + 1).toString().padStart(3, '0');
-      const generatedTrustId = `${year}-${branch}-${serial}`;
-
-      // 3. Insert additional details into "students" table
-      const { error: dbError } = await supabase
-        .from('students')
-        .insert([{
-          id: authData.user.id,
-          full_name: formData.fullName,
-          father_name: formData.fatherName,
-          mother_name: formData.motherName,
-          dob: formData.dob,
-          gender: formData.gender,
-          mobile_number: formData.mobileNumber,
-          father_mobile: formData.fatherMobile || null,
-          mother_mobile: formData.motherMobile || null,
-          email: formData.email,
-          address: formData.address,
-          trust_branch: formData.trustBranch,
-          trust_id: generatedTrustId,
-          ssc_school: formData.sscSchool,
-          ssc_board: formData.sscBoard,
-          ssc_year: formData.sscYear,
-          ssc_percentage: parseFloat(formData.sscPercentage) || null,
-          course_type: formData.courseType,
-          college_name: formData.collegeName,
-          branch: formData.branch,
-          year_of_joining: formData.yearOfJoining,
-          pin_number: formData.pinNumber,
-          diploma_percentage: parseFloat(formData.diplomaPercentage) || null,
-          btech_college: formData.btechCollege,
-          btech_year: formData.btechYear,
-          btech_branch: formData.btechBranch,
-          btech_pin: formData.btechPin,
-        }]);
-
-      if (dbError) {
-        console.error('Database insertion error:', dbError);
-        throw new Error('Auth successful but failed to save profile details.');
-      }
-
-      // 4. Send Student ID to registered email
-      try {
-        await fetch('/api/send-student-id', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: formData.email,
-            fullName: formData.fullName,
-            trustId: generatedTrustId,
-            trustBranch: formData.trustBranch,
-            courseType: formData.courseType,
-          }),
-        });
-      } catch (emailErr) {
-        // Non-blocking: registration already succeeded, just log the email failure
-        console.error('Failed to send student ID email:', emailErr);
-      }
-
-      onSuccess(authData.user.id);
+      onSuccess(data.userId);
     } catch (error: any) {
       console.error('Signup error:', error);
       alert('Error during signup: ' + error.message);
@@ -618,8 +543,6 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
                     <input 
                       required
                       type="number" 
-                      required
-                      placeholder="e.g. 2024"
                       name="yearOfJoining"
                       value={formData.yearOfJoining}
                       onChange={handleInputChange}

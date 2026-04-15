@@ -36,19 +36,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (authError) throw new Error(authError.message);
     if (!authData.user) throw new Error('Signup failed - no user data returned');
 
-    // 2. Validate branch and year before generating Trust ID
-    if (!formData.trustBranch || formData.trustBranch.trim() === '') {
-      await supabase.auth.admin.deleteUser(authData.user.id);
-      throw new Error('Trust Branch is required. Please select a branch.');
-    }
-    if (!formData.yearOfJoining || formData.yearOfJoining.toString().trim() === '') {
-      await supabase.auth.admin.deleteUser(authData.user.id);
-      throw new Error('Year of Joining is required.');
-    }
-
-    // 3. Generate Trust ID (Year-Branch-Serial)
-    const year = parseInt(formData.yearOfJoining?.toString());
-    const branch = formData.trustBranch.trim();
+    // 2. Generate Trust ID (Year-Branch-Serial)
+    const year = parseInt(formData.yearOfJoining?.toString()) || new Date().getFullYear();
+    const branch = formData.trustBranch;
 
     const { count } = await supabase
       .from('students')
@@ -59,7 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const serial = ((count || 0) + 1).toString().padStart(3, '0');
     const generatedTrustId = `${year}-${branch}-${serial}`;
 
-    // 4. Insert student record
+    // 3. Insert student record
     const { error: dbError } = await supabase
       .from('students')
       .insert([{
@@ -93,12 +83,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }]);
 
     if (dbError) {
-    // 5. Rollback: delete the auth user if DB insert fails
+      // Rollback: delete the auth user if DB insert fails
       await supabase.auth.admin.deleteUser(authData.user.id);
       throw new Error('Failed to save student profile: ' + dbError.message);
     }
 
-    // 6. Send welcome email with Student ID
+    // 4. Send welcome email with Student ID
     try {
       await transporter.sendMail({
         from: `"PSS Trust" <${process.env.SMTP_USER}>`,
