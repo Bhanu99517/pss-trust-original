@@ -54,6 +54,7 @@ const SUPABASE_IMAGES = [
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   return {
+    base: '/pss-trust/',
     plugins: [
       react(),
       tailwindcss(),
