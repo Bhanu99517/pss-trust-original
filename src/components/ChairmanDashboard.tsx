@@ -92,6 +92,12 @@ interface FeeApplication {
   created_at: string;
 }
 
+interface Branch {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
 interface ChairmanDashboardProps {
   students: Student[];
   onLogout: () => void;
@@ -103,7 +109,7 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
   const [filter, setFilter] = useState('All');
   const [branchFilter, setBranchFilter] = useState('All');
   const [appFilter, setAppFilter] = useState('pending_chairman');
-  const [activeTab, setActiveTab] = useState<'students' | 'applications' | 'attendance' | 'incharges' | 'notices' | 'signup-code'>('students');
+  const [activeTab, setActiveTab] = useState<'students' | 'applications' | 'attendance' | 'incharges' | 'notices' | 'signup-code' | 'branches'>('students');
   const [signupCode, setSignupCode] = useState<{ code: string | null, expiresAt: string | null }>({ code: null, expiresAt: null });
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   const [applications, setApplications] = useState<FeeApplication[]>([]);
@@ -111,6 +117,9 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
   const [studentsList, setStudentsList] = useState<Student[]>([]);
   const [incharges, setIncharges] = useState<any[]>([]);
   const [notices, setNotices] = useState<Notice[]>([]);
+  const [branchesList, setBranchesList] = useState<Branch[]>([]);
+  const [isAddingBranch, setIsAddingBranch] = useState(false);
+  const [newBranchName, setNewBranchName] = useState('');
   const [selectedApp, setSelectedApp] = useState<FeeApplication | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -119,12 +128,13 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
   const [showAddNotice, setShowAddNotice] = useState(false);
   const [newIncharge, setNewIncharge] = useState({ email: '', fullName: '', branches: [] as string[], role: 'branch_incharge', password: '' });
   const [newNotice, setNewNotice] = useState({ title: '', content: '', branches: [] as string[] });
-  const BRANCHES = ['BHEL', 'Bollaram', 'MYP', 'MKR', 'ECIL'];
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [isFixing, setIsFixing] = useState(false);
   const [approvalComment, setApprovalComment] = useState('');
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [showRecapture, setShowRecapture] = useState(false);
+
+  const [isLoadingBranches, setIsLoadingBranches] = useState(true);
 
   useEffect(() => {
     fetchStudents();
@@ -133,7 +143,65 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
     fetchIncharges();
     fetchNotices();
     fetchSignupCode();
+    fetchBranches();
   }, []);
+
+  const fetchBranches = async () => {
+    setIsLoadingBranches(true);
+    try {
+      const response = await fetch('/api/branches');
+      const data = await response.json();
+      if (data.success) {
+        setBranchesList(data.branches || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch branches:', error);
+    } finally {
+      setIsLoadingBranches(false);
+    }
+  };
+
+  const handleAddBranch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBranchName.trim()) return;
+    setIsUpdating('adding-branch');
+    try {
+      const response = await fetch('/api/branches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newBranchName }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setBranchesList(prev => [...prev, data.branch].sort((a, b) => a.name.localeCompare(b.name)));
+        setNewBranchName('');
+        setIsAddingBranch(false);
+        alert('Branch added successfully!');
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error: any) {
+      alert('Error adding branch: ' + error.message);
+    } finally {
+      setIsUpdating(null);
+    }
+  };
+
+  const handleDeleteBranch = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete branch "${name}"? This might affect students and incharges assigned to this branch.`)) return;
+    try {
+      const response = await fetch(`/api/branches/${id}`, { method: 'DELETE' });
+      const data = await response.json();
+      if (data.success) {
+        setBranchesList(prev => prev.filter(b => b.id !== id));
+        alert('Branch deleted successfully!');
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error: any) {
+      alert('Error deleting branch: ' + error.message);
+    }
+  };
 
   const fetchSignupCode = async () => {
     try {
@@ -342,6 +410,16 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
     }
   };
 
+  const filteredBranches = branchesList.filter(branch => 
+    branch.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const getBranchStats = (branchName: string) => {
+    const studentsInBranch = studentsList.filter(s => s.trust_branch === branchName).length;
+    const inchargesInBranch = incharges.filter(i => i.branch?.split(',').map((b: string) => b.trim()).includes(branchName)).length;
+    return { studentsInBranch, inchargesInBranch };
+  };
+
   const fixLegacyUrls = async () => {
     setIsFixing(true);
     try {
@@ -533,44 +611,54 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
 
       <main className="max-w-7xl mx-auto p-4 lg:p-8 space-y-8">
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-600">
-              <span className="text-xl font-bold">{studentsList.length}</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-600">
+              <span className="text-lg font-bold">{studentsList.length}</span>
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Students</p>
-              <p className="text-lg font-bold text-slate-900">Registered</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-tight">Total Students</p>
+              <p className="text-sm font-bold text-slate-900 leading-tight">Registered</p>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-            <div className="w-12 h-12 bg-orange-50 rounded-full flex items-center justify-center text-orange-600">
-              <Clock className="w-6 h-6" />
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
+            <div className="w-10 h-10 bg-purple-50 rounded-full flex items-center justify-center text-purple-600">
+              <School className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Pending</p>
-              <p className="text-lg font-bold text-slate-900">{applications.filter(a => a.status === 'pending_chairman').length} Applications</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-tight">Total Branches</p>
+              <p className="text-sm font-bold text-slate-900 leading-tight">{branchesList.length} Units</p>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-            <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600">
-              <CheckCircle className="w-6 h-6" />
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
+            <div className="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center text-orange-600">
+              <Clock className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Accepted</p>
-              <p className="text-lg font-bold text-slate-900">{applications.filter(a => a.status === 'approved').length} Applications</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-tight">Pending</p>
+              <p className="text-sm font-bold text-slate-900 leading-tight">{applications.filter(a => a.status === 'pending_chairman').length} Apps</p>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-            <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center text-red-600">
-              <CloseIcon className="w-6 h-6" />
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600">
+              <CheckCircle className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Rejected</p>
-              <p className="text-lg font-bold text-slate-900">{applications.filter(a => a.status === 'rejected').length} Applications</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-tight">Accepted</p>
+              <p className="text-sm font-bold text-slate-900 leading-tight">{applications.filter(a => a.status === 'approved').length} Apps</p>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
+            <div className="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center text-red-600">
+              <CloseIcon className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-tight">Rejected</p>
+              <p className="text-sm font-bold text-slate-900 leading-tight">{applications.filter(a => a.status === 'rejected').length} Apps</p>
             </div>
           </div>
         </div>
@@ -606,6 +694,12 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
             className={`px-8 py-4 text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'notices' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
           >
             Notices ({notices.length})
+          </button>
+          <button 
+            onClick={() => { setActiveTab('branches'); setBranchFilter('All'); setFilter('All'); }}
+            className={`px-8 py-4 text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'branches' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            Branches ({branchesList.length})
           </button>
           <button 
             onClick={() => { setActiveTab('signup-code'); }}
@@ -649,8 +743,8 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
                 onChange={(e) => setBranchFilter(e.target.value)}
               >
                 <option value="All">All Branches</option>
-                {['BHEL', 'Bollaram', 'MYP', 'MKR', 'ECIL'].map(b => (
-                  <option key={b} value={b}>{b}</option>
+                {branchesList.map(b => (
+                  <option key={b.id} value={b.name}>{b.name}</option>
                 ))}
               </select>
             )}
@@ -688,6 +782,16 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
             >
               <MessageSquare className="w-4 h-4" />
               <span>Add New Notice</span>
+            </button>
+          )}
+
+          {activeTab === 'branches' && (
+            <button 
+              onClick={() => setIsAddingBranch(true)}
+              className="px-6 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all shadow-lg flex items-center gap-2 whitespace-nowrap"
+            >
+              <School className="w-4 h-4" />
+              <span>Add New Branch</span>
             </button>
           )}
         </div>
@@ -1035,6 +1139,69 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
                 </tbody>
               </table>
             </div>
+          ) : activeTab === 'branches' ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-100">
+                    <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Branch Name</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Students</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Incharges</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Created At</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {isLoadingBranches ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-12 text-center text-slate-400 italic">
+                        <div className="flex flex-col items-center gap-2">
+                          <Loader2 className="w-8 h-8 animate-spin" />
+                          <span>Loading existing branches...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredBranches.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-12 text-center text-slate-400 italic">
+                        {searchTerm ? 'No branches match your search.' : 'No branches added yet.'}
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredBranches.map((branch) => {
+                      const stats = getBranchStats(branch.name);
+                      return (
+                        <tr key={branch.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-6 py-6 font-bold text-slate-900">{branch.name}</td>
+                          <td className="px-6 py-6">
+                            <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold font-mono">
+                              {stats.studentsInBranch}
+                            </span>
+                          </td>
+                          <td className="px-6 py-6">
+                            <span className="px-2 py-1 bg-purple-50 text-purple-600 rounded-lg text-xs font-bold font-mono">
+                              {stats.inchargesInBranch}
+                            </span>
+                          </td>
+                          <td className="px-6 py-6 text-sm text-slate-500">
+                            {new Date(branch.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-6 text-right">
+                            <button 
+                              onClick={() => handleDeleteBranch(branch.id, branch.name)}
+                              className="p-2 text-slate-400 hover:text-red-600 transition-colors"
+                              title="Delete Branch"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           ) : activeTab === 'signup-code' ? (
             <div className="p-12 flex flex-col items-center justify-center text-center space-y-8">
               <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600">
@@ -1141,7 +1308,7 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
                         const role = e.target.value;
                         let branches: string[] = [];
                         if (role === 'chairman') {
-                          branches = [...BRANCHES];
+                          branches = branchesList.map(b => b.name);
                         }
                         setNewIncharge({...newIncharge, role, branches});
                       }}
@@ -1162,8 +1329,8 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
                         onChange={(e) => setNewIncharge({...newIncharge, branches: [e.target.value]})}
                       >
                         <option value="">Select Branch</option>
-                        {BRANCHES.map(b => (
-                          <option key={b} value={b}>{b}</option>
+                        {branchesList.map(b => (
+                          <option key={b.id} value={b.name}>{b.name}</option>
                         ))}
                       </select>
                     </div>
@@ -1171,20 +1338,20 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-slate-400 uppercase block mb-2">Select Accessible Branches</label>
                       <div className="grid grid-cols-2 gap-3">
-                        {BRANCHES.map(b => (
-                          <label key={b} className="flex items-center gap-2 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-all">
+                        {branchesList.map(b => (
+                          <label key={b.id} className="flex items-center gap-2 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-all">
                             <input 
                               type="checkbox"
-                              checked={newIncharge.branches.includes(b)}
+                              checked={newIncharge.branches.includes(b.name)}
                               onChange={(e) => {
                                 const branches = e.target.checked 
-                                  ? [...newIncharge.branches, b]
-                                  : newIncharge.branches.filter(item => item !== b);
+                                  ? [...newIncharge.branches, b.name]
+                                  : newIncharge.branches.filter(item => item !== b.name);
                                 setNewIncharge({...newIncharge, branches});
                               }}
                               className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                             />
-                            <span className="text-sm font-medium text-slate-700">{b}</span>
+                            <span className="text-sm font-medium text-slate-700">{b.name}</span>
                           </label>
                         ))}
                       </div>
@@ -1197,9 +1364,9 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
                       <p className="text-xs font-bold text-slate-400 uppercase mb-2">Accessible Branches</p>
                       <p className="text-sm font-bold text-slate-900">All Branches (Full Access)</p>
                       <div className="flex flex-wrap gap-1 mt-2">
-                        {BRANCHES.map(b => (
-                          <span key={b} className="px-2 py-0.5 bg-white border border-slate-200 rounded-full text-[10px] font-bold text-slate-600">
-                            {b}
+                        {branchesList.map(b => (
+                          <span key={b.id} className="px-2 py-0.5 bg-white border border-slate-200 rounded-full text-[10px] font-bold text-slate-600">
+                            {b.name}
                           </span>
                         ))}
                       </div>
@@ -1276,20 +1443,20 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-400 uppercase block mb-2">Select Branches</label>
                   <div className="grid grid-cols-2 gap-3">
-                    {BRANCHES.map(b => (
-                      <label key={b} className="flex items-center gap-2 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-all">
+                    {branchesList.map(b => (
+                      <label key={b.id} className="flex items-center gap-2 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-all">
                         <input 
                           type="checkbox"
-                          checked={newNotice.branches.includes(b)}
+                          checked={newNotice.branches.includes(b.name)}
                           onChange={(e) => {
                             const branches = e.target.checked 
-                              ? [...newNotice.branches, b]
-                              : newNotice.branches.filter(item => item !== b);
+                              ? [...newNotice.branches, b.name]
+                              : newNotice.branches.filter(item => item !== b.name);
                             setNewNotice({...newNotice, branches});
                           }}
                           className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                         />
-                        <span className="text-sm font-medium text-slate-700">{b}</span>
+                        <span className="text-sm font-medium text-slate-700">{b.name}</span>
                       </label>
                     ))}
                   </div>
@@ -1838,17 +2005,18 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-400 uppercase">Trust Branch</label>
-                      <select 
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-slate-900 outline-none transition-all font-medium"
-                        value={editingStudent.trust_branch || 'BHEL'}
-                        onChange={(e) => setEditingStudent({...editingStudent, trust_branch: e.target.value})}
-                      >
-                        {['BHEL', 'Bollaram', 'MYP', 'MKR', 'ECIL'].map(b => (
-                          <option key={b} value={b}>{b}</option>
-                        ))}
-                      </select>
-                    </div>
+                       <label className="text-xs font-bold text-slate-400 uppercase">Trust Branch</label>
+                       <select 
+                         className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-slate-900 outline-none transition-all font-medium"
+                         value={editingStudent.trust_branch || ''}
+                         onChange={(e) => setEditingStudent({...editingStudent, trust_branch: e.target.value})}
+                       >
+                         <option value="">Select Branch</option>
+                         {branchesList.map(b => (
+                           <option key={b.id} value={b.name}>{b.name}</option>
+                         ))}
+                       </select>
+                     </div>
                     <div className="md:col-span-3 space-y-2">
                       <label className="text-xs font-bold text-slate-400 uppercase">Address</label>
                       <textarea 
@@ -2132,6 +2300,63 @@ export default function ChairmanDashboard({ students, onLogout, onChangePassword
                   Logout
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+
+        {isAddingBranch && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsAddingBranch(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-8"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-slate-900">Add New Branch</h3>
+                <button onClick={() => setIsAddingBranch(false)} className="text-slate-400 hover:text-slate-600">
+                  <CloseIcon className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleAddBranch} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-400 uppercase">Branch Name</label>
+                  <input 
+                    type="text" 
+                    required
+                    autoFocus
+                    placeholder="e.g. Miyapur"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-slate-900 outline-none transition-all"
+                    value={newBranchName}
+                    onChange={(e) => setNewBranchName(e.target.value)}
+                  />
+                </div>
+                
+                <div className="flex gap-3 pt-2">
+                  <button 
+                    type="button"
+                    onClick={() => setIsAddingBranch(false)}
+                    className="flex-1 py-3 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit"
+                    disabled={isUpdating === 'adding-branch'}
+                    className="flex-1 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-60"
+                  >
+                    {isUpdating === 'adding-branch' ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Add Branch'}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

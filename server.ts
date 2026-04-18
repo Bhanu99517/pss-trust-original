@@ -216,6 +216,57 @@ async function startServer() {
     }
   });
 
+  // Branch Management Endpoints
+  app.get("/api/branches", async (req, res) => {
+    try {
+      const { data, error } = await supabase
+        .from('branches')
+        .select('*')
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+      res.json({ success: true, branches: data });
+    } catch (error: any) {
+      console.error("Error fetching branches:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.post("/api/branches", async (req, res) => {
+    try {
+      const { name } = req.body;
+      if (!name) return res.status(400).json({ success: false, error: "Branch name is required" });
+
+      const { data, error } = await supabase
+        .from('branches')
+        .insert([{ name }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      res.json({ success: true, branch: data });
+    } catch (error: any) {
+      console.error("Error creating branch:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.delete("/api/branches/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { error } = await supabase
+        .from('branches')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting branch:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // API Routes
   app.get("/api/students", async (req, res) => {
     try {

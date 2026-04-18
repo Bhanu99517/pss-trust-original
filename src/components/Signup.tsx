@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, User, GraduationCap, Building2, Calendar, Hash, Percent, School, Phone, Mail, MapPin, BookOpen, X, CheckCircle2, AlertCircle, Loader2, Lock } from 'lucide-react';
 import { supabase } from '../supabaseClient';
@@ -8,14 +8,13 @@ interface SignupProps {
   onSuccess: (studentId: string) => void;
 }
 
-const TRUST_BRANCHES = ['BHEL', 'Bollaram', 'MYP', 'MKR', 'ECIL'];
-
 export default function Signup({ onBack, onSuccess }: SignupProps) {
   const [step, setStep] = useState<'form' | 'verification'>('form');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [regCode, setRegCode] = useState('');
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [codeError, setCodeError] = useState<string | null>(null);
+  const [branches, setBranches] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     fullName: '',
     fatherName: '',
@@ -27,7 +26,7 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
     motherMobile: '',
     email: '',
     address: '',
-    trustBranch: 'BHEL',
+    trustBranch: '',
     // SSC Details
     sscSchool: '',
     sscBoard: 'SSC',
@@ -47,6 +46,26 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
     btechBranch: '',
     btechPin: '',
   });
+
+  useEffect(() => {
+    fetchBranches();
+  }, []);
+
+  const fetchBranches = async () => {
+    try {
+      const response = await fetch('/api/branches');
+      const data = await response.json();
+      if (data.success && data.branches) {
+        const branchNames = data.branches.map((b: any) => b.name);
+        setBranches(branchNames);
+        if (branchNames.length > 0) {
+          setFormData(prev => ({ ...prev, trustBranch: branchNames[0] }));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch branches:', error);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -399,9 +418,13 @@ export default function Signup({ onBack, onSuccess }: SignupProps) {
                       onChange={handleInputChange}
                       className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white focus:border-slate-300 outline-none transition-all appearance-none"
                     >
-                      {TRUST_BRANCHES.map(branch => (
-                        <option key={branch} value={branch}>{branch}</option>
-                      ))}
+                      {branches.length === 0 ? (
+                        <option value="">Loading branches...</option>
+                      ) : (
+                        branches.map(branch => (
+                          <option key={branch} value={branch}>{branch}</option>
+                        ))
+                      )}
                     </select>
                   </div>
                 </div>

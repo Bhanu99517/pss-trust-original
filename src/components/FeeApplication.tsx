@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../supabaseClient';
 import { 
@@ -56,6 +56,23 @@ export default function FeeApplication({ onBack }: FeeApplicationProps) {
   ]);
 
   const [file, setFile] = useState<File | null>(null);
+  const [branches, setBranches] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetchBranches();
+  }, []);
+
+  const fetchBranches = async () => {
+    try {
+      const resp = await fetch('/api/branches');
+      const data = await resp.json();
+      if (data.success && data.branches) {
+        setBranches(data.branches.map((b: any) => b.name));
+      }
+    } catch (error) {
+      console.error('Failed to fetch branches:', error);
+    }
+  };
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -319,12 +336,17 @@ export default function FeeApplication({ onBack }: FeeApplicationProps) {
                       required
                       name="trustBranch"
                       value={formData.trustBranch}
+                      onChange={handleInputChange}
                       className="w-full px-4 py-3 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white focus:border-slate-300 outline-none transition-all font-medium"
                     >
                       <option value="">Select Branch</option>
-                      {['BHEL', 'Bollaram', 'MYP', 'MKR', 'ECIL'].map(b => (
-                        <option key={b} value={b}>{b}</option>
-                      ))}
+                      {branches.length === 0 ? (
+                        <option value="">Loading branches...</option>
+                      ) : (
+                        branches.map(b => (
+                          <option key={b} value={b}>{b}</option>
+                        ))
+                      )}
                     </select>
                   </div>
                   <div>

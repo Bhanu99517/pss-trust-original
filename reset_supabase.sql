@@ -11,6 +11,7 @@ DROP TABLE IF EXISTS student_profiles CASCADE;
 DROP TABLE IF EXISTS face_data CASCADE;
 DROP TABLE IF EXISTS daily_attendance CASCADE;
 DROP TABLE IF EXISTS incharges CASCADE;
+DROP TABLE IF EXISTS branches CASCADE;
 DROP TABLE IF EXISTS otp_codes CASCADE;
 
 -- Create students table
@@ -107,6 +108,25 @@ CREATE POLICY "Allow all access to students" ON students FOR ALL USING (true) WI
 CREATE POLICY "Allow all access to attendance" ON attendance FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all access to attendance_faces" ON attendance_faces FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all access to applications" ON applications FOR ALL USING (true) WITH CHECK (true);
+
+-- Create branches table
+CREATE TABLE branches (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE branches ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all access to branches" ON branches FOR ALL USING (true) WITH CHECK (true);
+
+-- Insert initial branches
+INSERT INTO branches (name) VALUES 
+('BHEL'), 
+('Bollaram'), 
+('MYP'), 
+('MKR'), 
+('ECIL')
+ON CONFLICT (name) DO NOTHING;
 
 -- Create incharges table
 -- FIX: Added 'role' column (was missing, but used throughout the app for branch_incharge / super_incharge routing)

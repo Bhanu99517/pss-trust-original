@@ -78,6 +78,7 @@ export default function SuperInchargeDashboard({ onLogout, onChangePassword }: S
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [assignedBranches, setAssignedBranches] = useState<string[]>([]);
+  const [allBranches, setAllBranches] = useState<string[]>([]);
 
   useEffect(() => {
     fetchInitialData();
@@ -86,8 +87,18 @@ export default function SuperInchargeDashboard({ onLogout, onChangePassword }: S
   const fetchInitialData = async () => {
     setIsLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const [{ data: authData }, bResp] = await Promise.all([
+        supabase.auth.getUser(),
+        fetch('/api/branches')
+      ]);
+
+      const bData = await bResp.json();
+      if (bData.success && bData.branches) {
+        setAllBranches(bData.branches.map((b: any) => b.name));
+      }
+
       let branches: string[] = [];
+      const user = authData.user;
       if (user) {
         const { data: inchargeData } = await supabase
           .from('incharges')
@@ -328,7 +339,7 @@ export default function SuperInchargeDashboard({ onLogout, onChangePassword }: S
             onChange={(e) => setBranchFilter(e.target.value)}
           >
             <option value="All">All My Branches</option>
-            {(assignedBranches.length > 0 ? assignedBranches : ['BHEL', 'Bollaram', 'MYP', 'MKR', 'ECIL']).map(b => (
+            {(assignedBranches.length > 0 ? assignedBranches : allBranches).map(b => (
               <option key={b} value={b}>{b}</option>
             ))}
           </select>
