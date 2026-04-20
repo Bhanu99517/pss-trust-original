@@ -49,7 +49,10 @@ import Impact from './pages/Impact';
 import Contact from './pages/Contact';
 import Gallery from './pages/Gallery';
 import SuccessStories from './pages/SuccessStories';
-import Legal from './pages/Legal';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import CookiePolicy from './pages/CookiePolicy';
+import DataRetention from './pages/DataRetention';
 
 import { supabase } from './supabaseClient';
 import { User } from '@supabase/supabase-js';
@@ -100,7 +103,7 @@ function Layout() {
                       location.pathname === '/admin-otp';
 
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-900 overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-white font-sans text-slate-900 overflow-x-hidden">
       {/* Top Header Info Bar */}
       {!isDashboard && (
         <div className="hidden lg:flex justify-between items-center px-8 py-3 bg-slate-50 border-b border-slate-200">
@@ -300,7 +303,7 @@ function Layout() {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main>
+      <main className="flex-1">
         <Outlet />
       </main>
 
@@ -348,10 +351,10 @@ function Layout() {
             </div>
 
             <div className="flex flex-wrap justify-start gap-x-10 gap-y-4 pt-[20px] pb-[20px] border-y border-slate-50 mb-10">
-              <Link to="/privacy-policy" className="text-xs font-semibold text-slate-500 hover:text-emerald-600 transition-colors uppercase tracking-wider">Privacy Policy</Link>
-              <Link to="/terms-of-service" className="text-xs font-semibold text-slate-500 hover:text-emerald-600 transition-colors uppercase tracking-wider">Terms of Service</Link>
-              <Link to="/cookie-policy" className="text-xs font-semibold text-slate-500 hover:text-emerald-600 transition-colors uppercase tracking-wider">Cookie Policy</Link>
-              <Link to="/data-retention-policy" className="text-xs font-semibold text-slate-500 hover:text-emerald-600 transition-colors uppercase tracking-wider">Data Retention</Link>
+              <Link to="/privacy_policy.html" className="text-xs font-semibold text-slate-500 hover:text-emerald-600 transition-colors uppercase tracking-wider">Privacy Policy</Link>
+              <Link to="/terms_of_service.html" className="text-xs font-semibold text-slate-500 hover:text-emerald-600 transition-colors uppercase tracking-wider">Terms of Service</Link>
+              <Link to="/cookie_policy.html" className="text-xs font-semibold text-slate-500 hover:text-emerald-600 transition-colors uppercase tracking-wider">Cookie Policy</Link>
+              <Link to="/data_retention.html" className="text-xs font-semibold text-slate-500 hover:text-emerald-600 transition-colors uppercase tracking-wider">Data Retention</Link>
             </div>
 
             <div className="text-left flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mt-[-30px] mb-[-20px]">
@@ -471,10 +474,15 @@ function AppContent() {
         <Route path="/success-stories" element={<SuccessStories />} />
         <Route path="/gallery" element={<Gallery />} />
         <Route path="/contact-us" element={<Contact />} />
-        <Route path="/privacy-policy" element={<Legal />} />
-        <Route path="/terms-of-service" element={<Legal />} />
-        <Route path="/cookie-policy" element={<Legal />} />
-        <Route path="/data-retention-policy" element={<Legal />} />
+        <Route path="/privacy_policy" element={<PrivacyPolicy />} />
+        <Route path="/terms_of_service" element={<TermsOfService />} />
+        <Route path="/cookie_policy" element={<CookiePolicy />} />
+        <Route path="/data_retention" element={<DataRetention />} />
+        {/* Legacy redirects */}
+        <Route path="/privacy-policy" element={<Navigate to="/privacy_policy" replace />} />
+        <Route path="/terms-of-service" element={<Navigate to="/terms_of_service" replace />} />
+        <Route path="/cookie-policy" element={<Navigate to="/cookie_policy" replace />} />
+        <Route path="/data-retention-policy" element={<Navigate to="/data_retention" replace />} />
         
         <Route path="/signup" element={
           <Signup 
