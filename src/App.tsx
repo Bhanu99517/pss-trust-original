@@ -49,10 +49,10 @@ import Impact from './pages/Impact';
 import Contact from './pages/Contact';
 import Gallery from './pages/Gallery';
 import SuccessStories from './pages/SuccessStories';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import TermsOfService from './pages/TermsOfService';
-import CookiePolicy from './pages/CookiePolicy';
-import DataRetention from './pages/DataRetention';
+import PrivacyPolicy   from './components/policies/PrivacyPolicy';
+import TermsOfService  from './components/policies/TermsOfService';
+import DataRetention   from './components/policies/DataRetention';
+import CookiePolicy    from './components/policies/CookiePolicy';
 
 import { supabase } from './supabaseClient';
 import { User } from '@supabase/supabase-js';
@@ -474,15 +474,10 @@ function AppContent() {
         <Route path="/success-stories" element={<SuccessStories />} />
         <Route path="/gallery" element={<Gallery />} />
         <Route path="/contact-us" element={<Contact />} />
-        <Route path="/privacy_policy.html" element={<PrivacyPolicy />} />
-        <Route path="/terms_of_service.html" element={<TermsOfService />} />
-        <Route path="/cookie_policy.html" element={<CookiePolicy />} />
-        <Route path="/data_retention.html" element={<DataRetention />} />
-        {/* Legacy redirects */}
-        <Route path="/privacy-policy" element={<Navigate to="/privacy_policy.html" replace />} />
-        <Route path="/terms-of-service" element={<Navigate to="/terms_of_service.html" replace />} />
-        <Route path="/cookie-policy" element={<Navigate to="/cookie_policy.html" replace />} />
-        <Route path="/data-retention-policy" element={<Navigate to="/data_retention.html" replace />} />
+        <Route path="/privacy-policy"   element={<PrivacyPolicy />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
+        <Route path="/data-retention"   element={<DataRetention />} />
+        <Route path="/cookie-policy"    element={<CookiePolicy />} />
         
         <Route path="/signup" element={
           <Signup 
