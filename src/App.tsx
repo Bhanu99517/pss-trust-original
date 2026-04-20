@@ -49,10 +49,11 @@ import Impact from './pages/Impact';
 import Contact from './pages/Contact';
 import Gallery from './pages/Gallery';
 import SuccessStories from './pages/SuccessStories';
-import PrivacyPolicy   from './components/policies/PrivacyPolicy';
-import TermsOfService  from './components/policies/TermsOfService';
-import DataRetention   from './components/policies/DataRetention';
-import CookiePolicy    from './components/policies/CookiePolicy';
+
+import PrivacyPolicy from './components/policies/PrivacyPolicy';
+import TermsOfService from './components/policies/TermsOfService';
+import DataRetention from './components/policies/DataRetention';
+import CookiePolicy from './components/policies/CookiePolicy';
 
 import { supabase } from './supabaseClient';
 import { User } from '@supabase/supabase-js';
@@ -351,10 +352,24 @@ function Layout() {
             </div>
 
             <div className="flex flex-wrap justify-start gap-x-10 gap-y-4 pt-[20px] pb-[20px] border-y border-slate-50 mb-10">
-              <Link to="/privacy_policy.html" className="text-xs font-semibold text-slate-500 hover:text-emerald-600 transition-colors uppercase tracking-wider">Privacy Policy</Link>
-              <Link to="/terms_of_service.html" className="text-xs font-semibold text-slate-500 hover:text-emerald-600 transition-colors uppercase tracking-wider">Terms of Service</Link>
-              <Link to="/cookie_policy.html" className="text-xs font-semibold text-slate-500 hover:text-emerald-600 transition-colors uppercase tracking-wider">Cookie Policy</Link>
-              <Link to="/data_retention.html" className="text-xs font-semibold text-slate-500 hover:text-emerald-600 transition-colors uppercase tracking-wider">Data Retention</Link>
+
+            {/* Bottom row — policy links */}
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-4 gap-y-2">
+              <a href="/privacy_policy.html" className="text-slate-400 hover:text-slate-700 text-[10px] lg:text-xs font-medium transition-colors">
+                Privacy Policy
+              </a>
+              <span className="text-slate-300 text-[10px]">|</span>
+              <a href="/terms_of_service.html" className="text-slate-400 hover:text-slate-700 text-[10px] lg:text-xs font-medium transition-colors">
+                Terms of Service
+              </a>
+              <span className="text-slate-300 text-[10px]">|</span>
+              <a href="/data_retention.html" className="text-slate-400 hover:text-slate-700 text-[10px] lg:text-xs font-medium transition-colors">
+                Data Retention Policy
+              </a>
+              <span className="text-slate-300 text-[10px]">|</span>
+              <a href="/cookie_policy.html" className="text-slate-400 hover:text-slate-700 text-[10px] lg:text-xs font-medium transition-colors">
+                Cookie &amp; Storage Policy
+              </a>
             </div>
 
             <div className="text-left flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mt-[-30px] mb-[-20px]">
@@ -478,12 +493,6 @@ function AppContent() {
         <Route path="/terms-of-service" element={<TermsOfService />} />
         <Route path="/data-retention" element={<DataRetention />} />
         <Route path="/cookie-policy" element={<CookiePolicy />} />
-        {/* Legacy redirects */}
-        <Route path="/privacy-policy" element={<Navigate to="/privacy_policy.html" replace />} />
-        <Route path="/terms-of-service" element={<Navigate to="/terms_of_service.html" replace />} />
-        <Route path="/cookie-policy" element={<Navigate to="/cookie_policy.html" replace />} />
-        <Route path="/data-retention-policy" element={<Navigate to="/data_retention.html" replace />} />
-        
         <Route path="/signup" element={
           <Signup 
             onBack={() => navigate(-1)} 
