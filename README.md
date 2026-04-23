@@ -1,4 +1,4 @@
-[![PSS Trust Banner](https://wojpyqvcargyfkyx fnl.supabase.co/storage/v1/object/public/shared-files/42cb9343-6c24-4522-8ac5-0c27336aff3c/974e4549-30b9-4cce-9a10-4ea107da6b4f.png)](https://pss-trust.vercel.app)
+[![PSS Trust Banner](https://wojpyqvcargyffkyxfln.supabase.co/storage/v1/object/public/shared-files/42cb9343-6c24-4522-8ac5-0c27336aff3c/974e4549-30b9-4cce-9a10-4ea107da6b4f.png)](https://pss-trust.vercel.app)
 
 # 🎓 PSS Trust — Student Management Portal
 
