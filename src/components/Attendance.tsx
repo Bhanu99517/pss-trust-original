@@ -252,13 +252,13 @@ export default function Attendance({ onBack }: AttendanceProps) {
         .eq('student_id', student.id);
 
       if (allLogs && allLogs.length > 0) {
-        const totalDays = allLogs.length;
+        // Fixed denominator of 365 — matches the Student Attendance page formula exactly
         const presentDays = allLogs.reduce((acc: number, log: any) => {
           if (log.status === 'present') return acc + 1;
           if (log.status === 'H' || log.status === 'HP') return acc + 0.5;
           return acc;
         }, 0);
-        const pct = parseFloat(((presentDays / totalDays) * 100).toFixed(2));
+        const pct = parseFloat(((presentDays / 365) * 100).toFixed(2));
         await supabase
           .from('students')
           .update({ trust_attendance_percentage: pct })
